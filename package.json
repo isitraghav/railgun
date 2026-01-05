@@ -15,7 +15,7 @@
         "peer": "node src/run-peer.js",
         "build": "vite build",
         "preview": "vite preview",
-        "prepare": "husky",
+        "prepare": "husky || echo 'Husky not installed, skipping'",
         "lint": "eslint .",
         "format": "prettier --write ."
     },
