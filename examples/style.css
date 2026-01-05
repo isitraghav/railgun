@@ -141,6 +141,23 @@ button:active {
     transform: scale(0.98);
 }
 
+.display-btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.display-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
 .primary-btn {
     background: var(--primary);
     color: white;

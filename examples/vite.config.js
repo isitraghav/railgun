@@ -19,6 +19,16 @@ export default defineConfig(({ mode }) => {
         define: {
             'process.env.SIGNALLING': JSON.stringify(env.SIGNALLING)
         },
+        build: {
+            rollupOptions: {
+                input: {
+                    main: 'index.html',
+                    notepad: 'notepad.html',
+                    cursor: 'cursor.html',
+                    stress: 'stress-test.html'
+                }
+            }
+        },
         server: {
             port: 5173
         }
