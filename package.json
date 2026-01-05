@@ -1,0 +1,64 @@
+{
+    "name": "railgundb",
+    "version": "1.0.0",
+    "description": "Decentralized, encrypted, peer-to-peer database with cryptographic identity",
+    "main": "src/index.js",
+    "type": "module",
+    "files": [
+        "src",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "test": "node test/run-all.js",
+        "server": "node src/network/server.js",
+        "peer": "node src/run-peer.js",
+        "build": "vite build",
+        "preview": "vite preview",
+        "prepare": "husky",
+        "lint": "eslint .",
+        "format": "prettier --write ."
+    },
+    "keywords": [
+        "decentralized",
+        "p2p",
+        "database",
+        "crdt",
+        "webrtc",
+        "encryption",
+        "merkle-tree",
+        "identity",
+        "local-first"
+    ],
+    "author": "",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/isitraghav/railgun.git"
+    },
+    "dependencies": {
+        "@koush/wrtc": "^0.5.3",
+        "@noble/ed25519": "^3.0.0",
+        "@noble/hashes": "^2.0.1",
+        "dotenv": "^17.2.3",
+        "fast-json-stable-stringify": "^2.1.0",
+        "idb": "^8.0.3",
+        "simple-peer": "^9.11.1",
+        "ws": "^8.18.3"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.39.2",
+        "eslint": "^9.39.2",
+        "express": "^5.2.1",
+        "globals": "^16.5.0",
+        "husky": "^9.1.7",
+        "lint-staged": "^16.2.7",
+        "prettier": "^3.7.4",
+        "vite": "^7.3.0",
+        "vite-plugin-node-polyfills": "^0.24.0"
+    },
+    "browser": {
+        "./src/storage/single-file.js": "./src/storage/single-file-stub.js"
+    },
+    "exports": "./src/index.js"
+}

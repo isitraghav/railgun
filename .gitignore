@@ -1,0 +1,13 @@
+.railgun*/
+node_modules/
+.DS_Store
+*.log
+.vscode/
+.idea/
+dist/
+*.swp
+*.swo
+.env
+.cache/
+*.tgz
+lint_*.txt

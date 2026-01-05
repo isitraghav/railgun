@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Railgun P2P Sync Test</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="style.css" />
+    </head>
+
+    <body>
+        <div class="app-container">
+            <header>
+                <div class="logo">Railgun <span>Db</span></div>
+                <div class="status-indicator" id="networkStatus">Offline</div>
+            </header>
+
+            <main>
+                <section class="panel glass-panel">
+                    <h2>Authentication</h2>
+                    <div class="form-group">
+                        <label>Display Name</label>
+                        <div class="input-with-suffix">
+                            <input type="text" id="username" placeholder="e.g., raghav" />
+                            <span class="suffix-separator">#</span>
+                            <input
+                                type="text"
+                                id="username-suffix"
+                                placeholder="0000"
+                                maxlength="4"
+                                pattern="[0-9]*"
+                                inputmode="numeric"
+                                class="suffix-input"
+                            />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="password" placeholder="Enter password" />
+                    </div>
+                    <div class="button-group">
+                        <button id="btnSignup" class="primary-btn">Sign Up</button>
+                        <button id="btnLogin" class="secondary-btn">Login</button>
+                    </div>
+                    <div id="authStatus" class="status-msg">Not authenticated</div>
+                </section>
+
+                <section class="panel glass-panel">
+                    <h2>Data Command Center</h2>
+
+                    <div class="tabs">
+                        <div class="tab active" data-tab="write">Write Data</div>
+                        <div class="tab" data-tab="read">Read & Sync</div>
+                    </div>
+
+                    <div class="tab-content active" id="tab-write">
+                        <div class="form-group">
+                            <label>Key</label>
+                            <input type="text" id="writeKey" placeholder="e.g. profile/bio" />
+                        </div>
+                        <div class="form-group">
+                            <label>Value (JSON)</label>
+                            <textarea
+                                id="writeValue"
+                                placeholder='{"text": "Hello World"}'
+                            ></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Space</label>
+                            <select id="writeSpace">
+                                <option value="all">Public (All)</option>
+                                <option value="user">Private (User)</option>
+                                <option value="frozen">Immutable (Frozen)</option>
+                            </select>
+                        </div>
+                        <button id="btnPut" class="action-btn">Put Data</button>
+                    </div>
+
+                    <div class="tab-content" id="tab-read">
+                        <div class="form-group">
+                            <label>Key</label>
+                            <input type="text" id="readKey" placeholder="e.g. profile/bio" />
+                        </div>
+                        <div class="form-group">
+                            <label>Space</label>
+                            <select id="readSpace">
+                                <option value="all">Public (All)</option>
+                                <option value="user">Private (User)</option>
+                                <option value="frozen">Immutable (Frozen)</option>
+                            </select>
+                        </div>
+                        <button id="btnGet" class="action-btn">Get & Sync</button>
+                        <div class="result-display">
+                            <label>Result:</label>
+                            <pre id="readResult">...</pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel glass-panel full-width">
+                    <h2>Network Logs</h2>
+                    <div class="logs-container" id="logs">
+                        <div class="log-entry system">System initialized. Ready to connect.</div>
+                    </div>
+                    <div class="controls">
+                        <button id="btnConnect" class="accent-btn">Connect Visualization</button>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <script type="module" src="app.js"></script>
+    </body>
+</html>

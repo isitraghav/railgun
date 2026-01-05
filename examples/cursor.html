@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Railgun Cursor Tracking</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="style.css" />
+        <style>
+            body {
+                overflow: hidden;
+                /* Prevent scrolling */
+                cursor: crosshair;
+            }
+
+            .cursor {
+                position: absolute;
+                pointer-events: none;
+                transition: all 0.1s linear;
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .cursor-pointer {
+                width: 0;
+                height: 0;
+                border-left: 8px solid transparent;
+                border-right: 8px solid transparent;
+                border-bottom: 22px solid var(--primary);
+                transform: rotate(-25deg);
+                transform-origin: top left;
+                margin-left: -3px; /* Fine tune tip */
+                margin-top: -2px;
+            }
+
+            .cursor-label {
+                background: var(--primary);
+                color: white;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                white-space: nowrap;
+                margin-top: 2px;
+                margin-left: 10px;
+            }
+
+            /* Generate different colors for different users if possible, or just random */
+        </style>
+    </head>
+
+    <body>
+        <div class="app-container" style="pointer-events: none">
+            <header>
+                <div class="logo">Railgun <span>Cursors</span></div>
+                <div class="status-indicator" id="networkStatus">Offline</div>
+            </header>
+
+            <div class="panel glass-panel" style="pointer-events: auto; max-width: 400px">
+                <h2>Multiplayer Cursors</h2>
+                <p style="font-size: 0.9rem; color: var(--text-muted)">
+                    Move your mouse to broadcast position.
+                    <br />
+                    <strong>Latency Warning:</strong> Since Railgun is a full P2P DB, every move is
+                    signed, hashed, stored, and synced. This is a stress test!
+                </p>
+                <div style="margin-top: 1rem">
+                    <label>My Handle:</label>
+                    <span id="myHandle" style="color: var(--accent)">...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cursors Container -->
+        <div id="cursors"></div>
+
+        <script type="module" src="cursor.js"></script>
+    </body>
+</html>

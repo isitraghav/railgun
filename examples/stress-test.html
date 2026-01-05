@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Railgun Stress Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+
+        h1 {
+            color: #4ec9b0;
+        }
+
+        #status {
+            background: #252526;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-family: monospace;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background: #1177bb;
+        }
+
+        button:disabled {
+            background: #3e3e42;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Railgun Browser Stress Test</h1>
+    <p>Open console (F12) to see detailed results</p>
+
+    <button id="startBtn">Start Stress Test</button>
+    <button id="clearBtn">Clear Database</button>
+
+    <div id="status">Ready to run tests...</div>
+
+    <script type="module">
+        import { Railgun } from 'railgundb';
+
+        const metrics = {
+            data: {},
+            start(label) {
+                this.data[label] = {
+                    startTime: Date.now(),
+                    startMemory: performance.memory ? performance.memory.usedJSHeapSize : 0
+                };
+            },
+            end(label, operations = 1) {
+                if (!this.data[label]) throw new Error(`No start time for ${label}`);
+
+                const duration = Date.now() - this.data[label].startTime;
+                const memoryUsed = performance.memory
+                    ? performance.memory.usedJSHeapSize - this.data[label].startMemory
+                    : 0;
+                const opsPerSecond = (operations / duration) * 1000;
+
+                return {
+                    duration,
+                    operations,
+                    opsPerSecond: opsPerSecond.toFixed(2),
+                    memoryUsed: (memoryUsed / 1024 / 1024).toFixed(2) + ' MB',
+                    avgTimePerOp: (duration / operations).toFixed(2) + ' ms'
+                };
+            }
+        };
+
+        function updateStatus(message) {
+            const status = document.getElementById('status');
+            status.textContent += message + '\n';
+            status.scrollTop = status.scrollHeight;
+        }
+
+        document.getElementById('startBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('startBtn');
+            btn.disabled = true;
+
+            const status = document.getElementById('status');
+            status.textContent = '';
+
+            console.clear();
+            console.log('Railgun Browser Stress Testing Suite\n');
+            updateStatus('Railgun Browser Stress Testing Suite');
+
+            const results = {};
+
+            try {
+                // Test 1: Writes
+                updateStatus('\n[Write] Write Performance');
+                const db1 = await Railgun.create({ signalling: process.env.SIGNALLING || 'http://localhost:3000' });
+                await db1.signup('perf-user', 'password123');
+
+                for (const ops of [100, 500, 1000]) {
+                    metrics.start(`write_${ops}`);
+                    for (let i = 0; i < ops; i++) {
+                        await db1.put(
+                            `test/item-${i}`,
+                            { index: i },
+                            { space: 'all', silent: true }
+                        );
+                    }
+                    const result = metrics.end(`write_${ops}`, ops);
+                    results[`write_${ops}`] = result;
+
+                    const msg = `   ${ops} writes: ${result.opsPerSecond} ops/sec (${result.avgTimePerOp})`;
+                    console.log(msg);
+                    updateStatus(msg);
+                }
+
+                // Flush writes to ensure accurate timing
+                await db1.close();
+
+                // Test 2: Reads
+                updateStatus('\n[Read] Read Performance');
+                const db2 = await Railgun.create({ signalling: process.env.SIGNALLING || 'http://localhost:3000' });
+                await db2.signup('read-user', 'password123');
+
+                for (let i = 0; i < 1000; i++) {
+                    await db2.put(
+                        `read/item-${i}`,
+                        { value: i },
+                        { space: 'all', silent: true }
+                    );
+                }
+
+                // Flush before reading
+                await db2.close();
+
+                // Reopen for reads
+                const db2Read = await Railgun.create({ signalling: process.env.SIGNALLING || 'http://localhost:3000' });
+                await db2Read.login('password123');
+
+                for (const ops of [100, 500, 1000]) {
+                    metrics.start(`read_${ops}`);
+                    for (let i = 0; i < ops; i++) {
+                        await db2Read.get(`read/item-${i}`, { space: 'all' });
+                    }
+                    const result = metrics.end(`read_${ops}`, ops);
+                    results[`read_${ops}`] = result;
+
+                    const msg = `   ${ops} reads: ${result.opsPerSecond} ops/sec (${result.avgTimePerOp})`;
+                    console.log(msg);
+                    updateStatus(msg);
+                }
+
+                await db2Read.close();
+
+                // Test 3: Concurrent
+                updateStatus('\n[Concurrent] Concurrent Operations');
+                const db3 = await Railgun.create({ signalling: process.env.SIGNALLING || 'http://localhost:3000' });
+                await db3.signup('concurrent-user', 'password123');
+
+                metrics.start('concurrent');
+                await Promise.all(
+                    Array.from({ length: 100 }, (_, i) =>
+                        db3.put(
+                            `concurrent/item-${i}`,
+                            { value: i },
+                            { space: 'all', silent: true }
+                        )
+                    )
+                );
+                const concResult = metrics.end('concurrent', 100);
+                results.concurrent = concResult;
+                const msg = `   100 concurrent: ${concResult.opsPerSecond} ops/sec`;
+                console.log(msg);
+                updateStatus(msg);
+
+                await db3.close();
+
+                // Summary with formatting
+                updateStatus('\n[Summary] Summary');
+                updateStatus('─'.repeat(50));
+                updateStatus(
+                    `[Write] Writes:     ${results.write_1000.opsPerSecond} ops/sec (avg: ${results.write_1000.avgTimePerOp})`
+                );
+                updateStatus(
+                    `[Read] Reads:      ${results.read_1000.opsPerSecond} ops/sec (avg: ${results.read_1000.avgTimePerOp})`
+                );
+                updateStatus(
+                    `[Concurrent] Concurrent: ${concResult.opsPerSecond} ops/sec (avg: ${concResult.avgTimePerOp})`
+                );
+                updateStatus('─'.repeat(50));
+                updateStatus(`[Memory] Memory Used: ${concResult.memoryUsed}`);
+                updateStatus('\n[DONE] Complete!');
+                console.log('[DONE] Stress testing complete!');
+            } catch (error) {
+                console.error('Test failed:', error);
+                updateStatus('\n[FAIL] Failed: ' + error.message);
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', async () => {
+            if (confirm('Clear all IndexedDB data?')) {
+                const dbs = await indexedDB.databases();
+                for (const db of dbs) {
+                    if (db.name && db.name.includes('railgun')) {
+                        indexedDB.deleteDatabase(db.name);
+                        console.log('Deleted database:', db.name);
+                    }
+                }
+                updateStatus('\n[DONE] Database cleared!');
+            }
+        });
+    </script>
+</body>
+
+</html>

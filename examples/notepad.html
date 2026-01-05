@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Railgun P2P Notepad</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        /* Specific overrides for notepad */
+        textarea#notepad {
+            min-height: 400px;
+            font-family: 'Fira Code', monospace;
+            font-size: 1rem;
+            line-height: 1.5;
+            resize: vertical;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .saving {
+            color: var(--accent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .saving.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">Railgun <span>Notepad</span></div>
+            <div class="status-indicator" id="networkStatus">Offline</div>
+        </header>
+
+        <main style="display: block">
+            <section class="panel glass-panel">
+                <div style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 1rem;
+                        ">
+                    <h2>Shared Notepad</h2>
+                    <div id="authDisplay" style="font-size: 0.9rem; color: var(--primary)">
+                        Guest
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <textarea id="notepad" placeholder="Type here... content will sync to other peers..."></textarea>
+                </div>
+
+                <div class="status-bar">
+                    <div id="statusMsg">Connecting...</div>
+                    <div id="saveIndicator" class="saving">Saving...</div>
+                </div>
+            </section>
+
+            <section class="panel glass-panel" style="margin-top: 2rem">
+                <h2>Debug Logs</h2>
+                <div class="logs-container" id="logs" style="height: 100px"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Simple Login Modal (hidden by default) -->
+
+
+    <script type="module" src="notepad.js"></script>
+</body>
+
+</html>
