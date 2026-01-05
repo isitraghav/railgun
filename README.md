@@ -50,6 +50,37 @@ await db.put('notes/secret', 'This is private', { space: 'user' });
 await db.connect('http://localhost:3000');
 ```
 
+## Signalling Server
+
+Railgun includes a built-in signalling server for P2P discovery.
+
+### Basic Usage
+
+```bash
+npm run server
+# Running on 0.0.0.0:3000
+```
+
+### Secure WebSocket (WSS) Support
+
+To enable WSS (required for HTTPS web deployments), provide SSL certificates via environment variables:
+
+**Option A: File Paths**
+
+```bash
+export SSL_KEY_PATH="/path/to/privkey.pem"
+export SSL_CERT_PATH="/path/to/fullchain.pem"
+npm run server
+```
+
+**Option B: Direct Content**
+
+```bash
+export SSL_KEY="-----BEGIN PRIVATE KEY-----..."
+export SSL_CERT="-----BEGIN CERTIFICATE-----..."
+npm run server
+```
+
 ## License
 
 MIT

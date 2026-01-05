@@ -1,5 +1,7 @@
 import { WebSocketServer } from 'ws';
 import http from 'http';
+import https from 'https';
+import fs from 'fs';
 
 const args = process.argv.slice(2);
 let cliPort = null;
@@ -14,7 +16,7 @@ if (portIndex !== -1) {
 const PORT = cliPort || process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
-const server = http.createServer((req, res) => {
+const requestListener = (req, res) => {
     if (req.method === 'GET' && req.url === '/health') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(
@@ -29,7 +31,31 @@ const server = http.createServer((req, res) => {
 
     res.writeHead(404);
     res.end();
-});
+};
+
+let server;
+
+if (process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH) {
+    // Case 1: Path to files (e.g. mounted volumes)
+    console.log('Starting secure server (HTTPS) using cert files...');
+    const options = {
+        key: fs.readFileSync(process.env.SSL_KEY_PATH),
+        cert: fs.readFileSync(process.env.SSL_CERT_PATH)
+    };
+    server = https.createServer(options, requestListener);
+} else if (process.env.SSL_KEY && process.env.SSL_CERT) {
+    // Case 2: Env vars contain the actual PEM content (easier for some cloud providers)
+    console.log('Starting secure server (HTTPS) using env content...');
+    const options = {
+        key: process.env.SSL_KEY.replace(/\\n/g, '\n'),
+        cert: process.env.SSL_CERT.replace(/\\n/g, '\n')
+    };
+    server = https.createServer(options, requestListener);
+} else {
+    // Case 3: Standard HTTP
+    console.log('Starting insecure server (HTTP)...');
+    server = http.createServer(requestListener);
+}
 
 const wss = new WebSocketServer({ server });
 

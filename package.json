@@ -1,6 +1,6 @@
 {
     "name": "railgundb",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Decentralized, encrypted, peer-to-peer database with cryptographic identity",
     "main": "src/index.js",
     "type": "module",

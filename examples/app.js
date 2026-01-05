@@ -170,7 +170,7 @@ document.getElementById('btnLogin').onclick = async () => {
 document.getElementById('btnConnect').onclick = async () => {
     if (!db) return;
     try {
-        await db.connect('http://localhost:3000');
+        await db.connect(process.env.SIGNALLING || 'http://localhost:3000');
         log('Re-connected to P2P Network', 'success');
     } catch (e) {
         log('Connection failed: ' + e.message, 'error');
