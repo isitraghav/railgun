@@ -97,6 +97,7 @@ export class BinaryTrie {
             stack.push(currentNode);
         }
 
+        const valueKey = await this.valueStore.put(value);
         currentNode.value = valueKey;
         currentNode._hasValue = true;
 

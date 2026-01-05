@@ -19,7 +19,9 @@ export class NodeFSStorage {
     async init() {
         try {
             await fs.mkdir(this.baseDir, { recursive: true });
-        } catch {}
+        } catch (_err) {
+            // Ignore if directory already exists or other errors
+        }
     }
 
     async put(hash, data) {
