@@ -14,7 +14,8 @@ export class NetworkManager {
             const client = new SignalingClient(
                 url,
                 (from, signal) => this.handleSignal(client, from, signal),
-                (peerId) => this.handlePeerJoin(client, peerId)
+                (peerId) => this.handlePeerJoin(client, peerId),
+                (from, payload) => this.handleRelay(from, payload)
             );
             return client;
         });
@@ -40,6 +41,63 @@ export class NetworkManager {
         this.createPeer(client, peerId, true);
     }
 
+    /**
+     * Handle data relayed through the signaling server (WebSocket fallback)
+     * This is used when WebRTC peer connections fail (e.g., mobile-to-desktop)
+     */
+    async handleRelay(from, payload) {
+        console.log(`Received relay from ${from}:`, payload.type);
+
+        // Process the relayed message the same way we'd process WebRTC data
+        try {
+            const msg = payload;
+
+            switch (msg.type) {
+                case 'push_envelope':
+                    if (msg.envelope) {
+                        const success = await this.db.merge(msg.envelope);
+                        if (success) {
+                            console.log(`[relay] Merged pushed data: ${msg.envelope.payload?.key}`);
+                        }
+                    }
+                    break;
+
+                case 'handshake':
+                    // Handle handshake from relay - trigger sync if roots differ
+                    if (msg.rootHash && msg.rootHash !== this.db.trie.rootHash) {
+                        console.log(`[relay] Root hash mismatch with ${from}, requesting sync`);
+                        // Request their data through relay
+                        this._sendRelayTo(from, {
+                            type: 'request_sync',
+                            rootHash: this.db.trie.rootHash
+                        });
+                    }
+                    break;
+
+                case 'request_sync':
+                    // They want our data - send our root hash back
+                    console.log(`[relay] Peer ${from} requesting sync`);
+                    this._sendRelayTo(from, {
+                        type: 'handshake',
+                        rootHash: this.db.trie.rootHash,
+                        publicKey: this.db.identity?.publicKey
+                    });
+                    break;
+
+                case 'event':
+                    if (this.db.events) {
+                        await this.db.events.emit(msg.path, {
+                            ...msg.metadata,
+                            remote: true
+                        });
+                    }
+                    break;
+            }
+        } catch (e) {
+            console.error('[relay] Error handling relay message:', e);
+        }
+    }
+
     createPeer(client, peerId, initiator) {
         const peer = new PeerConnection(initiator, client, peerId, this.db);
         this.peers.set(peerId, peer);
@@ -47,6 +105,15 @@ export class NetworkManager {
         peer.peer.on('close', () => {
             this.peers.delete(peerId);
         });
+    }
+
+    /**
+     * Send data to a specific peer via relay (fallback)
+     */
+    _sendRelayTo(peerId, payload) {
+        if (this.clients.length > 0) {
+            this.clients[0].sendRelay(peerId, payload);
+        }
     }
 
     /**
@@ -110,19 +177,51 @@ export class NetworkManager {
         this.peers.forEach((peer) => {
             peer.sendHandshake();
         });
+
+        // Also announce via relay for peers that don't have WebRTC
+        this._broadcastRelay({
+            type: 'handshake',
+            rootHash: this.db.trie.rootHash,
+            publicKey: this.db.identity?.publicKey
+        });
     }
 
     /**
      * Push an envelope to all connected peers for immediate sync
+     * Uses WebRTC if connected, falls back to WebSocket relay
      * @param {Object} envelope - The signed envelope to push
      */
     broadcastEnvelope(envelope) {
+        const message = {
+            type: 'push_envelope',
+            envelope
+        };
+
+        let sentViaWebRTC = false;
+
+        // Try WebRTC first for connected peers
         this.peers.forEach((peer) => {
-            peer.send({
-                type: 'push_envelope',
-                envelope
-            });
+            if (peer.connected) {
+                peer.send(message);
+                sentViaWebRTC = true;
+            }
         });
+
+        // Always broadcast via relay to ensure delivery to peers without WebRTC
+        this._broadcastRelay(message);
+
+        if (!sentViaWebRTC) {
+            console.log('[relay] No WebRTC connections, using relay only');
+        }
+    }
+
+    /**
+     * Broadcast data via WebSocket relay to all peers in room
+     */
+    _broadcastRelay(payload) {
+        if (this.clients.length > 0) {
+            this.clients[0].broadcast(payload);
+        }
     }
 
     /**
@@ -132,11 +231,19 @@ export class NetworkManager {
     triggerFullSync() {
         const rootHash = this.db.trie.rootHash;
         console.log(`Triggering full sync with root: ${rootHash}`);
+
+        // WebRTC peers
         this.peers.forEach((peer) => {
             peer.send({
                 type: 'request_sync',
                 rootHash
             });
+        });
+
+        // Relay fallback
+        this._broadcastRelay({
+            type: 'request_sync',
+            rootHash
         });
     }
 }

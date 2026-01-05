@@ -134,6 +134,36 @@ wss.on('connection', (ws) => {
                 } else {
                     console.warn(`Target peer ${to} not found or disconnected`);
                 }
+            } else if (data.type === 'relay') {
+                // Relay data to a specific peer (fallback when WebRTC fails)
+                const { to, payload } = data;
+                const target = clients.get(to);
+                if (target && target.readyState === 1) {
+                    target.send(
+                        JSON.stringify({
+                            type: 'relay',
+                            from: id,
+                            payload
+                        })
+                    );
+                }
+            } else if (data.type === 'broadcast') {
+                // Broadcast data to all peers in the same room
+                const { payload } = data;
+                if (ws.room && rooms.has(ws.room)) {
+                    const roomClients = rooms.get(ws.room);
+                    roomClients.forEach((client) => {
+                        if (client !== ws && client.readyState === 1) {
+                            client.send(
+                                JSON.stringify({
+                                    type: 'relay',
+                                    from: id,
+                                    payload
+                                })
+                            );
+                        }
+                    });
+                }
             }
         } catch (e) {
             console.error('Failed to handle message:', e);

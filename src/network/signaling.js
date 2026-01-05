@@ -1,10 +1,11 @@
 export class SignalingClient {
-    constructor(serverUrl, onSignal, onPeerJoin) {
+    constructor(serverUrl, onSignal, onPeerJoin, onRelay) {
         const url = serverUrl.replace(/^http/, 'ws');
 
         this.socket = new WebSocket(url);
         this.onSignal = onSignal;
         this.onPeerJoin = onPeerJoin;
+        this.onRelay = onRelay;
 
         this.socket.onopen = () => {
             console.log('Signaling connected');
@@ -21,6 +22,9 @@ export class SignalingClient {
                     if (this.onSignal) this.onSignal(data.from, data.signal);
                 } else if (data.type === 'peer-joined') {
                     if (this.onPeerJoin) this.onPeerJoin(data.peerId);
+                } else if (data.type === 'relay') {
+                    // Handle relayed data from server (WebSocket fallback)
+                    if (this.onRelay) this.onRelay(data.from, data.payload);
                 }
             } catch (e) {
                 console.error('Signaling error:', e);
@@ -34,6 +38,22 @@ export class SignalingClient {
 
     sendSignal(to, signal) {
         this._send({ type: 'signal', to, signal });
+    }
+
+    /**
+     * Relay data to a specific peer via the server
+     * Used when WebRTC connection isn't available
+     */
+    sendRelay(to, payload) {
+        this._send({ type: 'relay', to, payload });
+    }
+
+    /**
+     * Broadcast data to all peers in the room via the server
+     * Used for room-wide sync when WebRTC connections may not all be established
+     */
+    broadcast(payload) {
+        this._send({ type: 'broadcast', payload });
     }
 
     join(room) {
